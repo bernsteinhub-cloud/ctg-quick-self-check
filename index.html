@@ -859,11 +859,19 @@ function submitEmail() {
     return;
   }
 
+  // Build detailed answer report
+  const answersDetail = QUESTIONS.map((q, i) => ({
+    group: q.groupLabel,
+    question: q.title,
+    answer: q.options[state.answers[q.id]] || '(unanswered)',
+  }));
+
   const result = RESULTS[state.resultKey];
+  const scores = calculateScores(state.answers);
+
   document.getElementById('captureForm').style.display = 'none';
   document.getElementById('captureSuccess').style.display = 'block';
 
-  // POST to Vercel Function
   fetch('/api/submit-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -871,6 +879,15 @@ function submitEmail() {
       email: email,
       resultKey: state.resultKey,
       headline: result.headline,
+      body: result.body,
+      badge: result.badge,
+      answersDetail: answersDetail,
+      scores: {
+        context: scores.contextLevel.toFixed(2),
+        cognition: scores.cognitionLevel.toFixed(2),
+        capability: scores.capabilityLevel.toFixed(2),
+        current: scores.currentLevel.toFixed(2),
+      },
     }),
   }).then(r => r.json())
     .then(data => console.log('CTG Lead submitted:', data))
