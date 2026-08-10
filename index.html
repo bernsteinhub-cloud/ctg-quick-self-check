@@ -193,7 +193,7 @@
     text-align: center;
   }
   .chart-wrap h3 { font-size: 14px; color: var(--text-muted); font-weight: 500; margin-bottom: 12px; }
-  .chart-wrap svg { max-width: 100%; height: auto; }
+  .chart-wrap svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
   .chart-dot { animation: pulse 2s ease infinite; }
   @keyframes pulse {
     0%, 100% { opacity: 1; r: 6; }
@@ -732,17 +732,17 @@ function renderQuadrantChart(scores, resultKey) {
   const ctxPct = Math.round(((scores.contextLevel - 1) / 3) * 100);
   const curPct = Math.round(((scores.currentLevel - 1) / 3) * 100);
 
-  const W = 320, H = 280;
-  const pad = { top: 30, right: 36, bottom: 44, left: 48 };
+  // Larger chart + generous padding for bilingual labels
+  const W = 440, H = 370;
+  const pad = { top: 52, right: 48, bottom: 52, left: 64 };
   const pw = W - pad.left - pad.right;
   const ph = H - pad.top - pad.bottom;
   const cx = pad.left + (curPct / 100) * pw;
-  const cy = pad.top + ((100 - ctxPct) / 100) * ph; // invert Y: high context = top
+  const cy = pad.top + ((100 - ctxPct) / 100) * ph;
 
   const midX = pad.left + pw / 2;
   const midY = pad.top + ph / 2;
 
-  // Quadrant colors
   const qColors = {
     'top-left':     { fill: '#fdf2f2', accent: '#e8c8c8' },
     'top-right':    { fill: '#f0faf5', accent: '#c0dfd0' },
@@ -750,15 +750,14 @@ function renderQuadrantChart(scores, resultKey) {
     'bottom-right': { fill: '#f0f6fc', accent: '#c8d8e8' }
   };
 
-	// Highlight follows dot position — it shows where you are, not a second diagnosis
-	function getHighlightQuadrant(ctxPct, curPct) {
-		if (ctxPct >= 50 && curPct >= 50) return 'top-right';
-		if (ctxPct >= 50 && curPct < 50) return 'top-left';
-		if (ctxPct < 50 && curPct >= 50) return 'bottom-right';
-		return 'bottom-left';
-	}
-	const highlightQuadrant = getHighlightQuadrant(ctxPct, curPct);
-  // Quadrant paths
+  function getHighlightQuadrant(ctxPct, curPct) {
+    if (ctxPct >= 50 && curPct >= 50) return 'top-right';
+    if (ctxPct >= 50 && curPct < 50) return 'top-left';
+    if (ctxPct < 50 && curPct >= 50) return 'bottom-right';
+    return 'bottom-left';
+  }
+  const highlightQuadrant = getHighlightQuadrant(ctxPct, curPct);
+
   const qPaths = {
     'top-left':     `M${midX},${pad.top} L${pad.left},${pad.top} L${pad.left},${midY} L${midX},${midY} Z`,
     'top-right':    `M${midX},${pad.top} L${pad.left+pw},${pad.top} L${pad.left+pw},${midY} L${midX},${midY} Z`,
@@ -766,14 +765,15 @@ function renderQuadrantChart(scores, resultKey) {
     'bottom-right': `M${midX},${pad.top+ph} L${pad.left+pw},${pad.top+ph} L${pad.left+pw},${midY} L${midX},${midY} Z`
   };
 
+  // Two-line labels: EN on top, ZH below — rendered via <tspan>
   const quadrantLabels = [
-    { q: 'top-left',     text: 'Governance Behind / 治理落后', x: pad.left + 4, y: pad.top + 14 },
-    { q: 'top-right',    text: 'Aligned · Mature / 治理同步', x: pad.left + pw - 4, y: pad.top + 14, align: 'end' },
-    { q: 'bottom-left',  text: 'Aligned · Foundational / 基础匹配',   x: pad.left + 4, y: pad.top + ph - 6 },
-    { q: 'bottom-right', text: 'Governance Ahead / 治理领先', x: pad.left + pw - 4, y: pad.top + ph - 6, align: 'end' }
+    { en: 'Governance',     zh: 'Behind / 治理落后',   x: pad.left + 8,  y: pad.top + 16, align: 'start' },
+    { en: 'Aligned',        zh: 'Mature / 治理同步',    x: pad.left + pw - 8, y: pad.top + 16, align: 'end' },
+    { en: 'Aligned',        zh: 'Foundational / 基础匹配', x: pad.left + 8,  y: pad.top + ph - 14, align: 'start' },
+    { en: 'Governance',     zh: 'Ahead / 治理领先',     x: pad.left + pw - 8, y: pad.top + ph - 14, align: 'end' }
   ];
 
-  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:440px" xmlns="http://www.w3.org/2000/svg">`;
 
   // Quadrant backgrounds
   for (const [qName, coords] of Object.entries(qPaths)) {
@@ -781,7 +781,7 @@ function renderQuadrantChart(scores, resultKey) {
     svg += `<path d="${coords}" fill="${qColors[qName].fill}" stroke="${isHighlight ? qColors[qName].accent : '#e8ecf0'}" stroke-width="${isHighlight ? 1.5 : 0.5}"/>`;
   }
 
-  // Grid lines (subtle)
+  // Grid lines
   svg += `<line x1="${pad.left}" y1="${midY}" x2="${pad.left+pw}" y2="${midY}" stroke="#d0d5dc" stroke-width="0.5" stroke-dasharray="4,4"/>`;
   svg += `<line x1="${midX}" y1="${pad.top}" x2="${midX}" y2="${pad.top+ph}" stroke="#d0d5dc" stroke-width="0.5" stroke-dasharray="4,4"/>`;
 
@@ -794,41 +794,37 @@ function renderQuadrantChart(scores, resultKey) {
   svg += `<polygon points="${pad.left},${pad.top-4} ${pad.left-4},${pad.top+6} ${pad.left+4},${pad.top+6}" fill="#8e99a9"/>`;
 
   // Axis labels
-  svg += `<text x="${pad.left+pw/2}" y="${pad.top+ph+30}" text-anchor="middle" fill="#5f6b7a" font-size="11" font-family="var(--font)">Current Governance →</text>`;
-  svg += `<text x="${pad.left-38}" y="${pad.top+ph/2}" text-anchor="middle" fill="#5f6b7a" font-size="11" font-family="var(--font)" transform="rotate(-90,${pad.left-38},${pad.top+ph/2})">Business Context →</text>`;
+  svg += `<text x="${pad.left+pw/2}" y="${pad.top+ph+34}" text-anchor="middle" fill="#5f6b7a" font-size="11">Current Governance →</text>`;
+  svg += `<text x="${pad.left-48}" y="${pad.top+ph/2}" text-anchor="middle" fill="#5f6b7a" font-size="11" transform="rotate(-90,${pad.left-48},${pad.top+ph/2})">Business Context →</text>`;
 
   // Axis tick labels
-  svg += `<text x="${pad.left}" y="${pad.top+ph+16}" text-anchor="middle" fill="#8e99a9" font-size="10">Low</text>`;
-  svg += `<text x="${pad.left+pw}" y="${pad.top+ph+16}" text-anchor="middle" fill="#8e99a9" font-size="10">High</text>`;
-  svg += `<text x="${pad.left-16}" y="${pad.top+5}" text-anchor="end" fill="#8e99a9" font-size="10">High</text>`;
-  svg += `<text x="${pad.left-16}" y="${pad.top+ph+4}" text-anchor="end" fill="#8e99a9" font-size="10">Low</text>`;
+  svg += `<text x="${pad.left}" y="${pad.top+ph+18}" text-anchor="middle" fill="#8e99a9" font-size="10">Low</text>`;
+  svg += `<text x="${pad.left+pw}" y="${pad.top+ph+18}" text-anchor="middle" fill="#8e99a9" font-size="10">High</text>`;
+  svg += `<text x="${pad.left-16}" y="${pad.top+6}" text-anchor="end" fill="#8e99a9" font-size="10">High</text>`;
+  svg += `<text x="${pad.left-16}" y="${pad.top+ph+6}" text-anchor="end" fill="#8e99a9" font-size="10">Low</text>`;
 
-  // Quadrant labels
+  // Quadrant labels — two-line with EN bold + ZH smaller
   for (const lbl of quadrantLabels) {
-    const align = lbl.align || 'start';
-    svg += `<text x="${lbl.x}" y="${lbl.y}" text-anchor="${align}" fill="#5f6b7a" font-size="11" font-family="var(--font)" font-weight="500">${lbl.text}</text>`;
+    svg += `<text x="${lbl.x}" y="${lbl.y}" text-anchor="${lbl.align}" fill="#5f6b7a" font-size="11" font-weight="600">${lbl.en}</text>`;
+    svg += `<text x="${lbl.x}" y="${lbl.y + 14}" text-anchor="${lbl.align}" fill="#8e99a9" font-size="10">${lbl.zh}</text>`;
   }
 
-  // User position dot with glow
-  svg += `<defs>
-    <radialGradient id="dotGlow">
-      <stop offset="0%" stop-color="${getDotColor(resultKey)}" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="${getDotColor(resultKey)}" stop-opacity="0"/>
-    </radialGradient>
-  </defs>`;
-  svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="url(#dotGlow)"/>`;
-  svg += `<circle cx="${cx}" cy="${cy}" r="5" fill="${getDotColor(resultKey)}" stroke="#fff" stroke-width="2" class="chart-dot"/>`;
+  // Dot glow + dot
+  svg += `<defs><radialGradient id="dotGlow"><stop offset="0%" stop-color="${getDotColor(resultKey)}" stop-opacity="0.35"/><stop offset="100%" stop-color="${getDotColor(resultKey)}" stop-opacity="0"/></radialGradient></defs>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="16" fill="url(#dotGlow)"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="6" fill="${getDotColor(resultKey)}" stroke="#fff" stroke-width="2.5" class="chart-dot"/>`;
 
-  // Label near the dot
-  const labelOffsetX = cx > midX ? 16 : -16;
-  const labelOffsetY = cy > midY ? 16 : -12;
-  svg += `<text x="${cx + labelOffsetX}" y="${cy + labelOffsetY}" text-anchor="${cx > midX ? 'start' : 'end'}" fill="${getDotColor(resultKey)}" font-size="11" font-weight="700" font-family="var(--font)">您在这里</text>`;
+  // Dot label — bilingual
+  const lx = cx > midX ? 18 : -18;
+  const ly = cy > midY ? 18 : -14;
+  svg += `<text x="${cx + lx}" y="${cy + ly}" text-anchor="${cx > midX ? 'start' : 'end'}" fill="${getDotColor(resultKey)}" font-size="11" font-weight="700">You are here</text>`;
+  svg += `<text x="${cx + lx}" y="${cy + ly + 13}" text-anchor="${cx > midX ? 'start' : 'end'}" fill="${getDotColor(resultKey)}" font-size="9" opacity="0.7">您在这里</text>`;
 
   svg += `</svg>`;
 
   return `
     <div class="chart-wrap">
-      <h3>治理定位 · 四象限视图</h3>
+      <h3>Governance Positioning · 治理定位四象限视图</h3>
       ${svg}
       <div class="chart-legend">
         <span><span class="dot" style="background:#c0392b"></span> Governance Behind / 治理落后</span>
