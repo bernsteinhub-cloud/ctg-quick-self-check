@@ -267,6 +267,41 @@
     text-decoration: underline; text-underline-offset: 3px;
   }
   .restart-link:hover { color: var(--text-secondary); }
+
+  /* ── Booking Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card-bg); border-radius: var(--radius-lg);
+    padding: 32px 28px 28px; width: 100%; max-width: 440px;
+    box-shadow: var(--shadow-lg); position: relative;
+    animation: modalIn .3s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .modal-close {
+    position: absolute; top: 14px; right: 18px; background: none; border: none;
+    font-size: 22px; cursor: pointer; color: var(--text-muted); padding: 4px 8px;
+    border-radius: 4px; line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); background: var(--border-light); }
+  .modal h3 { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+  .modal .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .modal .field { margin-bottom: 16px; }
+  .modal .field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+  .modal .field input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font);
+    outline: none; transition: var(--transition);
+  }
+  .modal .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,58,95,.08); }
+  .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  .modal .btn-row .btn { padding: 11px 28px; font-size: 14px; }
+  .modal-success { display: none; text-align: center; padding: 20px 0; }
+  .modal-success .icon { font-size: 40px; margin-bottom: 12px; }
+  .modal-success p { font-size: 14px; color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -274,6 +309,43 @@
 <div class="app">
   <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
   <div class="screen" id="screen"></div>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBooking()">×</button>
+    <div id="bookingForm">
+      <h3>预约15分钟免费诊断对话</h3>
+      <p class="modal-sub">填写以下信息，我们会在24小时内与您确认时间</p>
+      <div class="field">
+        <label>🏢 公司名称 *</label>
+        <input type="text" id="bkCompany" placeholder="请输入公司名称" autocomplete="organization">
+      </div>
+      <div class="field">
+        <label>👤 联系人姓名 *</label>
+        <input type="text" id="bkName" placeholder="请输入您的姓名" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>📧 邮箱 *</label>
+        <input type="email" id="bkEmail" placeholder="请输入您的企业邮箱" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>🕐 计划的时间</label>
+        <input type="text" id="bkTime" placeholder="如：下周任意工作日下午、8月15日上午">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="closeBooking()">取消</button>
+        <button class="btn btn-primary btn-sm" onclick="submitBooking()">提交预约</button>
+      </div>
+    </div>
+    <div class="modal-success" id="bookingSuccess">
+      <div class="icon">✅</div>
+      <h3>预约已提交</h3>
+      <p>我们会在24小时内通过邮件与您确认诊断对话时间。</p>
+      <button class="btn btn-outline btn-sm" style="margin-top:16px" onclick="closeBooking()">关闭</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -317,7 +389,7 @@ const QUESTIONS = [
   {
     id: 'B3', group: 'Group B · 治理能力', groupLabel: '治理能力',
     title: '差旅数据和系统现状？',
-    options: ['无系统，纸质/邮件流程为主', '由行政/秘书比价代订，数据分散不完整', '有TMC/在线预订系统，能看到部门级数据', '系统已打通（HR/财务/差旅一体化），具备分析能力', '自建差旅平台及数据分析看板，具备预测能力']
+    options: ['无系统，纸质/邮件流程为主', '由行政/秘书比价代订，数据比较分散', '有TMC/在线预订系统，能看到部门级数据', '系统已打通（HR/财务/差旅一体化），具备分析能力', '自建差旅平台及数据分析看板，具备预测能力']
   },
   {
     id: 'B4', group: 'Group B · 治理能力', groupLabel: '治理能力',
@@ -618,9 +690,9 @@ function showResult() {
 
       <div class="cta-section">
         <p>想进一步了解您的 Governance Gap 具体在哪里？</p>
-        <a class="btn btn-primary" href="https://calendly.com/your-link/15min" target="_blank" rel="noopener">
+        <button class="btn btn-primary" onclick="openBooking()">
           📅 预约15分钟免费诊断对话
-        </a>
+        </button>
       </div>
 
       <span class="restart-link" onclick="renderWelcome()">重新开始诊断</span>
@@ -816,6 +888,52 @@ function copyQuote(btn) {
     setTimeout(() => { btn.textContent = '📋 复制判断句'; }, 1500);
   });
 }
+
+// ── Booking Modal ──
+function openBooking() {
+  document.getElementById('bookingModal').classList.add('open');
+  document.getElementById('bookingForm').style.display = 'block';
+  document.getElementById('bookingSuccess').style.display = 'none';
+  // Pre-fill email if already captured
+  const capturedEmail = document.getElementById('emailInput')?.value;
+  if (capturedEmail && capturedEmail.includes('@')) {
+    document.getElementById('bkEmail').value = capturedEmail;
+  }
+}
+
+function closeBooking() {
+  document.getElementById('bookingModal').classList.remove('open');
+}
+
+function submitBooking() {
+  const company = document.getElementById('bkCompany').value.trim();
+  const name = document.getElementById('bkName').value.trim();
+  const email = document.getElementById('bkEmail').value.trim();
+  const preferredTime = document.getElementById('bkTime').value.trim();
+
+  if (!company) { document.getElementById('bkCompany').style.borderColor='#c0392b'; return; }
+  if (!name) { document.getElementById('bkName').style.borderColor='#c0392b'; return; }
+  if (!email || !email.includes('@')) { document.getElementById('bkEmail').style.borderColor='#c0392b'; return; }
+
+  fetch('/api/submit-booking', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company, name, email, preferredTime }),
+  }).then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('bookingForm').style.display = 'none';
+        document.getElementById('bookingSuccess').style.display = 'block';
+        console.log('Booking submitted:', { company, name, email, preferredTime });
+      }
+    })
+    .catch(err => console.error('Booking error:', err));
+}
+
+// Close modal on backdrop click
+document.getElementById('bookingModal').addEventListener('click', function(e) {
+  if (e.target === this) closeBooking();
+});
 
 // ── Init ──
 renderWelcome();

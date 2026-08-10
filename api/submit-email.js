@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
     if (resendApiKey && notifyEmail) {
       const resend = new Resend(resendApiKey);
 
-      await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: 'CTG Quick Self-Check <onboarding@resend.dev>',
         to: notifyEmail,
         subject: `[CTG 新线索] ${email} — ${resultLabel}`,
@@ -93,7 +93,12 @@ module.exports = async function handler(req, res) {
         `,
       });
 
-      console.log(`[CTG Lead] Notification sent to ${notifyEmail}`);
+      if (error) {
+        console.error('[CTG Lead] Resend error:', JSON.stringify(error));
+        return res.status(200).json({ success: true, warning: 'Email queued but may not deliver (check Resend domain)' });
+      }
+
+      console.log(`[CTG Lead] Notification sent to ${notifyEmail} (id: ${data?.id})`);
     } else {
       console.log('[CTG Lead] Email notification skipped (RESEND_API_KEY or NOTIFY_EMAIL not set)');
     }
