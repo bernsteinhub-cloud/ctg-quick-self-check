@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTG Quick Self-Check — 差旅治理快速诊断</title>
+<style>
+  :root {
+    --bg: #f8f9fb;
+    --card-bg: #ffffff;
+    --text: #1a1d28;
+    --text-secondary: #5f6b7a;
+    --text-muted: #8e99a9;
+    --accent: #1e3a5f;
+    --accent-light: #2c5282;
+    --gold: #b7935b;
+    --gold-light: #d4b87a;
+    --border: #e2e6ed;
+    --border-light: #eef0f4;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.10);
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --transition: 0.3s cubic-bezier(.4,0,.2,1);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --red: #c0392b;
+    --red-bg: #fdf2f2;
+    --amber: #b85c1a;
+    --amber-bg: #fef9f0;
+    --green: #1a6b4a;
+    --green-bg: #f0faf5;
+    --blue: #2563a0;
+    --blue-bg: #f0f6fc;
+    --neutral-bg: #f7f8fa;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    line-height: 1.6;
+  }
+
+  /* ── App Shell ── */
+  .app {
+    width: 100%;
+    max-width: 640px;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    position: relative;
+    min-height: 480px;
+  }
+
+  /* ── Progress Bar ── */
+  .progress-wrap {
+    height: 4px;
+    background: var(--border-light);
+    position: relative;
+    opacity: 0;
+    transition: opacity .25s;
+  }
+  .progress-wrap.visible { opacity: 1; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    transition: width .5s cubic-bezier(.4,0,.2,1);
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* ── Screen Container ── */
+  .screen {
+    padding: 40px 44px 44px;
+    animation: fadeIn .35s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Welcome Screen ── */
+  .welcome { text-align: center; padding-top: 56px; padding-bottom: 56px; }
+  .welcome-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+  }
+  .welcome h1 { font-size: 28px; font-weight: 700; color: var(--accent); margin-bottom: 10px; letter-spacing: -.01em; }
+  .welcome .subtitle { font-size: 15px; color: var(--text-secondary); margin-bottom: 8px; }
+  .welcome .meta {
+    display: flex; gap: 20px; justify-content: center; margin: 28px 0 36px;
+    font-size: 14px; color: var(--text-muted);
+  }
+  .welcome .meta span { display: flex; align-items: center; gap: 6px; }
+  .welcome .meta .icon { font-size: 16px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 36px; border-radius: 100px; font-size: 16px; font-weight: 600;
+    cursor: pointer; border: none; transition: var(--transition);
+    font-family: var(--font); text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 2px 8px rgba(30,58,95,.25);
+  }
+  .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(30,58,95,.3); }
+  .btn-outline {
+    background: transparent; color: var(--accent);
+    border: 1.5px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--accent); background: rgba(30,58,95,.03); }
+  .btn-sm { padding: 10px 24px; font-size: 14px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+
+  /* ── Question Screen ── */
+  .q-header { margin-bottom: 28px; }
+  .q-group {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--gold); margin-bottom: 8px;
+  }
+  .q-counter { font-size: 13px; color: var(--text-muted); float: right; }
+  .q-title {
+    font-size: 20px; font-weight: 650; color: var(--text);
+    line-height: 1.5; letter-spacing: -.005em;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+  .option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; border: 1.5px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    transition: var(--transition); background: var(--card-bg);
+    font-size: 15px; color: var(--text);
+  }
+  .option:hover { border-color: #bcc4d0; background: #fafbfc; }
+  .option.selected {
+    border-color: var(--accent); background: #f5f7fb;
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .option-radio {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+  }
+  .option.selected .option-radio {
+    border-color: var(--accent); background: var(--accent);
+  }
+  .option.selected .option-radio::after {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff;
+  }
+  .option-label { flex: 1; }
+
+  .q-nav { display: flex; justify-content: space-between; align-items: center; }
+
+  /* ── Results Screen ── */
+  .result { padding-top: 32px; padding-bottom: 40px; }
+  .result-badge {
+    display: inline-block; padding: 6px 14px; border-radius: 100px;
+    font-size: 13px; font-weight: 600; letter-spacing: .04em; margin-bottom: 20px;
+  }
+  .result-badge.warn { background: var(--red-bg); color: var(--red); }
+  .result-badge.info { background: var(--amber-bg); color: var(--amber); }
+  .result-badge.ok { background: var(--green-bg); color: var(--green); }
+  .result-badge.neutral { background: var(--blue-bg); color: var(--blue); }
+
+  .result-headline {
+    font-size: 26px; font-weight: 700; color: var(--accent);
+    line-height: 1.4; margin-bottom: 16px; letter-spacing: -.01em;
+  }
+  .result-body {
+    font-size: 15px; color: var(--text-secondary); line-height: 1.85;
+    margin-bottom: 28px;
+  }
+
+  /* ── Quadrant Chart ── */
+  .chart-wrap {
+    background: var(--bg); border-radius: var(--radius);
+    padding: 24px 20px 20px; margin-bottom: 28px;
+    text-align: center;
+  }
+  .chart-wrap h3 { font-size: 14px; color: var(--text-muted); font-weight: 500; margin-bottom: 12px; }
+  .chart-wrap svg { max-width: 100%; height: auto; }
+  .chart-dot { animation: pulse 2s ease infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; r: 6; }
+    50% { opacity: .7; r: 8; }
+  }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--text-muted); }
+  .chart-legend span { display: flex; align-items: center; gap: 5px; }
+  .chart-legend .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── Email Capture ── */
+  .capture-wrap {
+    background: var(--bg); border-radius: var(--radius);
+    padding: 24px; margin-bottom: 24px;
+  }
+  .capture-wrap h3 { font-size: 16px; font-weight: 650; color: var(--text); margin-bottom: 6px; }
+  .capture-wrap p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .capture-form { display: flex; gap: 10px; }
+  .capture-form input {
+    flex: 1; padding: 12px 16px; border: 1.5px solid var(--border);
+    border-radius: 100px; font-size: 14px; font-family: var(--font);
+    outline: none; transition: var(--transition);
+  }
+  .capture-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,58,95,.08); }
+  .capture-form .btn { flex-shrink: 0; }
+  .capture-success { color: var(--green); font-size: 14px; font-weight: 500; text-align: center; padding: 8px 0; display: none; }
+
+  /* ── CTA Section ── */
+  .cta-section {
+    text-align: center; padding-top: 8px; border-top: 1px solid var(--border-light);
+  }
+  .cta-section p { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+  .cta-section .btn-primary { background: var(--gold); box-shadow: 0 2px 8px rgba(183,147,91,.25); }
+  .cta-section .btn-primary:hover { background: var(--gold-light); }
+
+  /* ── Shareable Quote ── */
+  .share-quote {
+    background: linear-gradient(135deg, #f5f7fb 0%, #eef1f6 100%);
+    border-left: 4px solid var(--accent);
+    padding: 18px 22px; border-radius: 0 var(--radius) var(--radius) 0;
+    margin-bottom: 24px; font-size: 16px; font-weight: 600;
+    color: var(--accent); position: relative;
+  }
+  .share-quote .copy-btn {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: var(--card-bg); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 100px; font-size: 12px;
+    cursor: pointer; color: var(--text-secondary); transition: var(--transition);
+    font-family: var(--font);
+  }
+  .share-quote .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .share-quote .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    body { padding: 0; align-items: flex-start; }
+    .app { border-radius: 0; min-height: 100vh; max-width: 100%; box-shadow: none; }
+    .screen { padding: 28px 20px 32px; }
+    .welcome { padding-top: 40px; padding-bottom: 40px; }
+    .welcome h1 { font-size: 24px; }
+    .q-title { font-size: 18px; }
+    .result-headline { font-size: 22px; }
+    .capture-form { flex-direction: column; }
+    .share-quote .copy-btn { position: static; transform: none; margin-top: 10px; display: inline-block; }
+    .share-quote { display: flex; flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ── Restart Link ── */
+  .restart-link {
+    display: block; text-align: center; margin-top: 20px;
+    font-size: 13px; color: var(--text-muted); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .restart-link:hover { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+  <div class="screen" id="screen"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────
+//  CTG Quick Self-Check — Quiz Engine
+// ─────────────────────────────────────
+
+const QUESTIONS = [
+  // ── Group A: Business Context (4 questions) ──
+  {
+    id: 'A1', group: 'Group A · 业务复杂度', groupLabel: '业务复杂度',
+    title: '贵公司业务覆盖的国家/地区数量？',
+    options: ['仅中国大陆', '2–5个国家/地区', '6–15个国家/地区', '15个以上国家/地区']
+  },
+  {
+    id: 'A2', group: 'Group A · 业务复杂度', groupLabel: '业务复杂度',
+    title: '公司全球员工规模？',
+    options: ['500人以下', '500–2000人', '2000–10000人', '10000人以上']
+  },
+  {
+    id: 'A3', group: 'Group A · 业务复杂度', groupLabel: '业务复杂度',
+    title: '过去12个月，公司整体差旅规模的变化趋势？',
+    options: ['基本持平或收缩', '温和增长（低于20%）', '显著增长（20%–50%）', '快速扩张（50%以上，或新进入多个海外市场）']
+  },
+  {
+    id: 'A4', group: 'Group A · 业务复杂度', groupLabel: '业务复杂度',
+    title: '贵公司业务对合规、数据保护、出行安全的要求程度？',
+    options: ['较低（以国内出差为主）', '中等（有海外业务，标准商务差旅为主）', '较高（跨国运营，涉及行业监管或数据合规）', '很高（金融/医药/能源等强监管行业，或员工常赴高风险地区）']
+  },
+  // ── Group B: Current Governance Capability (6 questions) ──
+  {
+    id: 'B1', group: 'Group B · 治理能力', groupLabel: '治理能力',
+    title: '差旅由谁负责？',
+    options: ['没有人专门负责，员工或行政自行处理', '财务/行政顺带管理，主要关注费用', '有专职差旅负责人，主要处理日常运营', '有专职Travel Manager，重点关注政策制定和跨部门协调', '有Travel Governance Committee，高管参与决策']
+  },
+  {
+    id: 'B2', group: 'Group B · 治理能力', groupLabel: '治理能力',
+    title: '管理层能看到什么样的差旅数据？',
+    options: ['基本不关注', '财务能看到总费用报表', '部门负责人能看到本部门分析', 'CXO/高管定期看到企业级Dashboard和趋势']
+  },
+  {
+    id: 'B3', group: 'Group B · 治理能力', groupLabel: '治理能力',
+    title: '差旅数据和系统现状？',
+    options: ['无系统，纸质/邮件流程为主', '由行政/秘书比价代订，数据分散不完整', '有TMC/在线预订系统，能看到部门级数据', '系统已打通（HR/财务/差旅一体化），具备分析能力', '自建差旅平台及数据分析看板，具备预测能力']
+  },
+  {
+    id: 'B4', group: 'Group B · 治理能力', groupLabel: '治理能力',
+    title: '差旅政策和流程现状？',
+    options: ['几乎没有正式政策', '有粗线条基础成本控制规则（如审批额度）', '有标准化全覆盖的政策和预订流程', '政策会依据数据和风险动态调整，覆盖全球/区域差异']
+  },
+  {
+    id: 'B5', group: 'Group B · 治理能力', groupLabel: '治理能力',
+    title: '供应商管理现状？',
+    options: ['员工自行联系/预订，无统一渠道', '有基础TMC合作，但未系统化管理', '集中管理主要供应商（航司/酒店/TMC）', '建立了全球+区域结合的供应商生态治理体系']
+  },
+  {
+    id: 'B6', group: 'Group B · 治理能力', groupLabel: '治理能力',
+    title: '出差风险与安全管理现状？',
+    options: ['没有相关机制', '有基础合规/审批控制', '有行程追踪和应急联络机制', '有覆盖全球的风险预测和应急响应体系']
+  }
+];
+
+const RESULTS = {
+  governance_behind: {
+    id: 'governance_behind',
+    badge: '⚠️ 治理落后于业务',
+    badgeClass: 'warn',
+    headline: '您的差旅治理，落后于当前业务复杂度。',
+    body: '贵公司的业务复杂度和国际化程度，已经超过了当前差旅治理的能力水平。这种错配通常表现为：成本不可见、责任不清晰、风险敞口扩大。这不代表管理失败，而是企业增长速度快于治理体系建设速度的普遍现象——但如果不主动补上这个缺口，差距只会随着业务扩张继续拉大。',
+    quadrant: 'top-left',
+    article: 'https://example.com/governance-gap'
+  },
+  tool_ahead: {
+    id: 'tool_ahead',
+    badge: '🔧 工具领先于治理',
+    badgeClass: 'info',
+    headline: '您的系统能力，跑在了治理意识前面。',
+    body: '贵公司在系统和工具层面已经具备一定基础，但治理的所有权和决策可见度还没跟上——这是很多国际化企业常见的"工具幻觉"：有系统不代表有治理。技术可以加速转型，但不能替代治理决策。',
+    quadrant: 'varies',
+    article: 'https://example.com/tool-doesnt-fix-governance'
+  },
+  vision_ahead: {
+    id: 'vision_ahead',
+    badge: '💡 认知领先于执行',
+    badgeClass: 'info',
+    headline: '您已经想清楚方向，但执行能力还未跟上。',
+    body: '贵公司管理层已经意识到差旅治理的重要性，但在数据、系统、流程等执行层面的能力建设还有差距。这类企业最大的风险不是不知道该怎么做，而是资源和优先级没有匹配上认知。',
+    quadrant: 'varies',
+    article: 'https://example.com/vision-execution-gap'
+  },
+  aligned_foundational: {
+    id: 'aligned_foundational',
+    badge: '✓ 治理与业务基本匹配',
+    badgeClass: 'neutral',
+    headline: '您当前的治理水平，与业务阶段基本匹配。',
+    body: '以贵公司目前的业务复杂度和国际化程度，现有的差旅管理方式基本能够满足需要。这不代表不需要关注，而是说明现阶段不必盲目追求"更成熟"的治理模式——重点是在业务扩张时提前规划下一步。',
+    quadrant: 'bottom-left',
+    article: null
+  },
+  aligned_mature: {
+    id: 'aligned_mature',
+    badge: '✓ 治理与业务同步',
+    badgeClass: 'ok',
+    headline: '您的治理能力，与业务复杂度保持同步。',
+    body: '贵公司在业务全球化程度较高的情况下，已经建立起相应的治理能力，这是比较少见的良性状态。接下来的机会点通常在于：如何让差旅数据进一步反哺企业级经营决策，而不仅仅是治理本身。',
+    quadrant: 'top-right',
+    article: null
+  },
+  governance_ahead: {
+    id: 'governance_ahead',
+    badge: 'ℹ️ 治理领先于业务',
+    badgeClass: 'neutral',
+    headline: '您的治理体系，可能比当前业务阶段更复杂。',
+    body: '贵公司目前建立的治理体系，复杂度可能超过了现阶段业务实际需要。这不一定是坏事——可能是为未来扩张提前布局，但也可能意味着资源分配可以更精简、更聚焦。',
+    quadrant: 'bottom-right',
+    article: null
+  }
+};
+
+// ── State ──
+const state = {
+  screen: 'welcome',   // 'welcome' | 'question' | 'result'
+  questionIndex: 0,
+  answers: {},         // { A1: 0-3, A2: 0-3, ..., B6: 0-3|4 }
+  resultKey: null
+};
+
+// ── Score Calculation ──
+function normalize(value, maxOptionIndex) {
+  // Normalize any option index (0-based) to a 1-4 scale.
+  // maxOptionIndex: 3 for 4-option questions, 4 for 5-option questions.
+  // We map 0→1, maxOptionIndex→4
+  return 1 + (value / maxOptionIndex) * 3;
+}
+
+function calculateScores(answers) {
+  // Group A: each A1-A4 has 4 options (indices 0-3)
+  const A1 = normalize(answers.A1, 3);
+  const A2 = normalize(answers.A2, 3);
+  const A3 = normalize(answers.A3, 3);
+  const A4 = normalize(answers.A4, 3);
+  const contextLevel = (A1 + A2 + A3 + A4) / 4;
+
+  // Cognition: B1 (5 options, index 0-4) + B2 (4 options, index 0-3)
+  const B1_norm = normalize(answers.B1, 4);
+  const B2_norm = normalize(answers.B2, 3);
+  const cognitionLevel = (B1_norm + B2_norm) / 2;
+
+  // Capability: B3 (5 options, 0-4) + B4 (4) + B5 (4) + B6 (4)
+  const B3_norm = normalize(answers.B3, 4);
+  const B4_norm = normalize(answers.B4, 3);
+  const B5_norm = normalize(answers.B5, 3);
+  const B6_norm = normalize(answers.B6, 3);
+  const capabilityLevel = (B3_norm + B4_norm + B5_norm + B6_norm) / 4;
+
+  // Current = blended Cognition + Capability
+  const currentLevel = (cognitionLevel + capabilityLevel) / 2;
+
+  return { contextLevel, cognitionLevel, capabilityLevel, currentLevel };
+}
+
+function determineResult(scores) {
+  const { contextLevel, cognitionLevel, capabilityLevel, currentLevel } = scores;
+  const GAP = 1.0; // minimum gap of 1 level on the 1-4 scale to trigger directional results
+
+  // Priority 1: Context notably higher than Current → Governance Behind
+  if (contextLevel - currentLevel >= GAP) {
+    return 'governance_behind';
+  }
+
+  // Priority 2: Capability notably higher than Cognition → Tool Ahead
+  if (capabilityLevel - cognitionLevel >= GAP) {
+    return 'tool_ahead';
+  }
+
+  // Priority 3: Cognition notably higher than Capability → Vision Ahead
+  if (cognitionLevel - capabilityLevel >= GAP) {
+    return 'vision_ahead';
+  }
+
+  // Priority 4: Current notably higher than Context → Governance Ahead
+  if (currentLevel - contextLevel >= GAP) {
+    return 'governance_ahead';
+  }
+
+	  // No strong gap on any dimension → use quadrant position so text never contradicts the chart dot
+	  const ctxHigh = contextLevel >= 2.5;
+	  const curHigh = currentLevel >= 2.5;
+	  if (ctxHigh && curHigh)   return 'aligned_mature';
+	  if (!ctxHigh && !curHigh) return 'aligned_foundational';
+	  if (ctxHigh && !curHigh)  return 'governance_behind';
+	  return 'governance_ahead';
+}
+
+// ── Render ──
+const screen = document.getElementById('screen');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+
+function updateProgress() {
+  if (state.screen === 'question') {
+    progressWrap.classList.add('visible');
+    const pct = Math.round((state.questionIndex / QUESTIONS.length) * 100);
+    progressBar.style.width = pct + '%';
+  } else if (state.screen === 'welcome') {
+    progressWrap.classList.remove('visible');
+    progressBar.style.width = '0%';
+  } else {
+    progressWrap.classList.add('visible');
+    progressBar.style.width = '100%';
+  }
+}
+
+function renderWelcome() {
+  state.screen = 'welcome';
+  state.questionIndex = 0;
+  state.answers = {};
+  state.resultKey = null;
+  updateProgress();
+
+  screen.innerHTML = `
+    <div class="welcome">
+      <div class="welcome-badge">CTG · Corporate Travel Governance</div>
+      <h1>差旅治理快速诊断</h1>
+      <p class="subtitle">了解您的企业差旅治理，是否跟上了业务发展的步伐 <span style="color:#ccc;font-size:11px">v2.1</span></p>
+      <div class="meta">
+        <span><span class="icon">⏱</span> 约2分钟</span>
+        <span><span class="icon">📋</span> 10道题</span>
+        <span><span class="icon">📊</span> 即时诊断</span>
+      </div>
+      <button class="btn btn-primary" onclick="startQuiz()">开始诊断</button>
+    </div>
+  `;
+}
+
+function startQuiz() {
+  state.screen = 'question';
+  state.questionIndex = 0;
+  updateProgress();
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[state.questionIndex];
+  const selectedIdx = state.answers[q.id];
+  const isFirst = state.questionIndex === 0;
+  const isLast = state.questionIndex === QUESTIONS.length - 1;
+
+  updateProgress();
+
+  screen.innerHTML = `
+    <div class="q-header">
+      <div class="q-group">
+        ${q.group}
+        <span class="q-counter">第 ${state.questionIndex + 1}/${QUESTIONS.length} 题</span>
+      </div>
+      <div class="q-title">${q.title}</div>
+    </div>
+    <div class="options">
+      ${q.options.map((opt, i) => `
+        <div class="option${selectedIdx === i ? ' selected' : ''}" onclick="selectOption('${q.id}', ${i})" data-idx="${i}">
+          <div class="option-radio"></div>
+          <span class="option-label">${opt}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div class="q-nav">
+      ${isFirst
+        ? '<span></span>'
+        : '<button class="btn btn-outline btn-sm" onclick="prevQuestion()">← 上一题</button>'
+      }
+      <button class="btn btn-primary btn-sm" onclick="nextQuestion()" ${selectedIdx == null ? 'disabled' : ''}>
+        ${isLast ? '查看结果 →' : '下一题 →'}
+      </button>
+    </div>
+  `;
+}
+
+function selectOption(qid, idx) {
+  state.answers[qid] = idx;
+  // Re-render to update selection highlight and enable Next button
+  renderQuestion();
+}
+
+function nextQuestion() {
+  const q = QUESTIONS[state.questionIndex];
+  if (state.answers[q.id] == null) return;
+
+  if (state.questionIndex < QUESTIONS.length - 1) {
+    state.questionIndex++;
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function prevQuestion() {
+  if (state.questionIndex > 0) {
+    state.questionIndex--;
+    renderQuestion();
+  }
+}
+
+// ── Results ──
+function showResult() {
+  state.screen = 'result';
+  updateProgress();
+
+  const scores = calculateScores(state.answers);
+  const resultKey = determineResult(scores);
+  state.resultKey = resultKey;
+  const result = RESULTS[resultKey];
+
+  // Build the quadrant position from scores
+  // For display, we map the 1-4 scale to a percentage (0-100)
+  const ctxPct = Math.round(((scores.contextLevel - 1) / 3) * 100);
+  const curPct = Math.round(((scores.currentLevel - 1) / 3) * 100);
+
+  screen.innerHTML = `
+    <div class="result">
+      <div class="result-badge ${result.badgeClass}">${result.badge}</div>
+      <div class="result-headline">${result.headline}</div>
+
+      <div class="share-quote" id="shareQuote">
+        ${result.headline}
+        <button class="copy-btn" onclick="copyQuote(this)" id="copyBtn">📋 复制判断句</button>
+      </div>
+
+      <div class="result-body">${result.body}</div>
+
+      ${renderQuadrantChart(scores, resultKey)}
+
+      <div class="capture-wrap">
+        <h3>获取您的完整 CTG Profile 报告</h3>
+        <p>留下邮箱，我们将发送您的专属诊断报告（含四象限定位图与分析摘要，不含算法细节）</p>
+        <div class="capture-form" id="captureForm">
+          <input type="email" id="emailInput" placeholder="请输入您的企业邮箱" autocomplete="email">
+          <button class="btn btn-primary btn-sm" onclick="submitEmail()">获取报告</button>
+        </div>
+        <div class="capture-success" id="captureSuccess">✓ 感谢提交！报告将发送至您的邮箱。</div>
+      </div>
+
+      <div class="cta-section">
+        <p>想进一步了解您的 Governance Gap 具体在哪里？</p>
+        <a class="btn btn-primary" href="https://calendly.com/your-link/15min" target="_blank" rel="noopener">
+          📅 预约15分钟免费诊断对话
+        </a>
+      </div>
+
+      <span class="restart-link" onclick="renderWelcome()">重新开始诊断</span>
+
+      <details style="margin-top:24px;font-size:11px;color:#aaa;text-align:left;border-top:1px solid #eee;padding-top:12px">
+        <summary style="cursor:pointer;margin-bottom:8px">🔧 Debug: 内部计分 (v2.1)</summary>
+        <div style="font-family:monospace;line-height:1.8" id="debugInfo"></div>
+      </details>
+    </div>
+  `;
+
+  // Populate debug info
+  document.getElementById('debugInfo').innerHTML = `
+    Context Level:  <b>${scores.contextLevel.toFixed(2)}</b> (${ctxPct}%)<br>
+    Cognition:      <b>${scores.cognitionLevel.toFixed(2)}</b><br>
+    Capability:     <b>${scores.capabilityLevel.toFixed(2)}</b><br>
+    Current Level:  <b>${scores.currentLevel.toFixed(2)}</b> (${curPct}%)<br>
+    Gap (ctx-cur):  <b>${(scores.contextLevel - scores.currentLevel).toFixed(2)}</b><br>
+    Cog-Cap gap:    <b>${(scores.cognitionLevel - scores.capabilityLevel).toFixed(2)}</b><br>
+    → Result:       <b>${resultKey}</b><br>
+    → Dot quadrant: ${ctxPct >= 50 ? (curPct >= 50 ? 'top-right' : 'top-left') : (curPct >= 50 ? 'bottom-right' : 'bottom-left')}<br>
+    Answers: ${JSON.stringify(state.answers)}
+  `;
+}
+
+// ── Quadrant Chart (SVG) ──
+function renderQuadrantChart(scores, resultKey) {
+  // Map scores (1-4 scale) to chart coordinates (0-100)
+  const ctxPct = Math.round(((scores.contextLevel - 1) / 3) * 100);
+  const curPct = Math.round(((scores.currentLevel - 1) / 3) * 100);
+
+  const W = 320, H = 280;
+  const pad = { top: 30, right: 36, bottom: 44, left: 48 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+  const cx = pad.left + (curPct / 100) * pw;
+  const cy = pad.top + ((100 - ctxPct) / 100) * ph; // invert Y: high context = top
+
+  const midX = pad.left + pw / 2;
+  const midY = pad.top + ph / 2;
+
+  // Quadrant colors
+  const qColors = {
+    'top-left':     { fill: '#fdf2f2', accent: '#e8c8c8' },
+    'top-right':    { fill: '#f0faf5', accent: '#c0dfd0' },
+    'bottom-left':  { fill: '#f7f8fa', accent: '#d8dce2' },
+    'bottom-right': { fill: '#f0f6fc', accent: '#c8d8e8' }
+  };
+
+	// Highlight follows dot position — it shows where you are, not a second diagnosis
+	function getHighlightQuadrant(ctxPct, curPct) {
+		if (ctxPct >= 50 && curPct >= 50) return 'top-right';
+		if (ctxPct >= 50 && curPct < 50) return 'top-left';
+		if (ctxPct < 50 && curPct >= 50) return 'bottom-right';
+		return 'bottom-left';
+	}
+	const highlightQuadrant = getHighlightQuadrant(ctxPct, curPct);
+  // Quadrant paths
+  const qPaths = {
+    'top-left':     `M${midX},${pad.top} L${pad.left},${pad.top} L${pad.left},${midY} L${midX},${midY} Z`,
+    'top-right':    `M${midX},${pad.top} L${pad.left+pw},${pad.top} L${pad.left+pw},${midY} L${midX},${midY} Z`,
+    'bottom-left':  `M${midX},${pad.top+ph} L${pad.left},${pad.top+ph} L${pad.left},${midY} L${midX},${midY} Z`,
+    'bottom-right': `M${midX},${pad.top+ph} L${pad.left+pw},${pad.top+ph} L${pad.left+pw},${midY} L${midX},${midY} Z`
+  };
+
+  const quadrantLabels = [
+    { q: 'top-left',     text: '治理落后于业务', x: pad.left + 4, y: pad.top + 14 },
+    { q: 'top-right',    text: '治理与业务同步', x: pad.left + pw - 4, y: pad.top + 14, align: 'end' },
+    { q: 'bottom-left',  text: '基础阶段匹配',   x: pad.left + 4, y: pad.top + ph - 6 },
+    { q: 'bottom-right', text: '治理领先于业务', x: pad.left + pw - 4, y: pad.top + ph - 6, align: 'end' }
+  ];
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Quadrant backgrounds
+  for (const [qName, coords] of Object.entries(qPaths)) {
+    const isHighlight = qName === highlightQuadrant;
+    svg += `<path d="${coords}" fill="${qColors[qName].fill}" stroke="${isHighlight ? qColors[qName].accent : '#e8ecf0'}" stroke-width="${isHighlight ? 1.5 : 0.5}"/>`;
+  }
+
+  // Grid lines (subtle)
+  svg += `<line x1="${pad.left}" y1="${midY}" x2="${pad.left+pw}" y2="${midY}" stroke="#d0d5dc" stroke-width="0.5" stroke-dasharray="4,4"/>`;
+  svg += `<line x1="${midX}" y1="${pad.top}" x2="${midX}" y2="${pad.top+ph}" stroke="#d0d5dc" stroke-width="0.5" stroke-dasharray="4,4"/>`;
+
+  // Axis lines
+  svg += `<line x1="${pad.left}" y1="${pad.top+ph}" x2="${pad.left+pw}" y2="${pad.top+ph}" stroke="#8e99a9" stroke-width="1"/>`;
+  svg += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top+ph}" stroke="#8e99a9" stroke-width="1"/>`;
+
+  // Axis arrows
+  svg += `<polygon points="${pad.left+pw+4},${pad.top+ph} ${pad.left+pw-4},${pad.top+ph-4} ${pad.left+pw-4},${pad.top+ph+4}" fill="#8e99a9"/>`;
+  svg += `<polygon points="${pad.left},${pad.top-4} ${pad.left-4},${pad.top+6} ${pad.left+4},${pad.top+6}" fill="#8e99a9"/>`;
+
+  // Axis labels
+  svg += `<text x="${pad.left+pw/2}" y="${pad.top+ph+30}" text-anchor="middle" fill="#5f6b7a" font-size="11" font-family="var(--font)">当前治理能力 →</text>`;
+  svg += `<text x="${pad.left-38}" y="${pad.top+ph/2}" text-anchor="middle" fill="#5f6b7a" font-size="11" font-family="var(--font)" transform="rotate(-90,${pad.left-38},${pad.top+ph/2})">业务复杂度 →</text>`;
+
+  // Axis tick labels
+  svg += `<text x="${pad.left}" y="${pad.top+ph+16}" text-anchor="middle" fill="#8e99a9" font-size="10">低</text>`;
+  svg += `<text x="${pad.left+pw}" y="${pad.top+ph+16}" text-anchor="middle" fill="#8e99a9" font-size="10">高</text>`;
+  svg += `<text x="${pad.left-16}" y="${pad.top+5}" text-anchor="end" fill="#8e99a9" font-size="10">高</text>`;
+  svg += `<text x="${pad.left-16}" y="${pad.top+ph+4}" text-anchor="end" fill="#8e99a9" font-size="10">低</text>`;
+
+  // Quadrant labels
+  for (const lbl of quadrantLabels) {
+    const align = lbl.align || 'start';
+    svg += `<text x="${lbl.x}" y="${lbl.y}" text-anchor="${align}" fill="#5f6b7a" font-size="11" font-family="var(--font)" font-weight="500">${lbl.text}</text>`;
+  }
+
+  // User position dot with glow
+  svg += `<defs>
+    <radialGradient id="dotGlow">
+      <stop offset="0%" stop-color="${getDotColor(resultKey)}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${getDotColor(resultKey)}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="url(#dotGlow)"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="5" fill="${getDotColor(resultKey)}" stroke="#fff" stroke-width="2" class="chart-dot"/>`;
+
+  // Label near the dot
+  const labelOffsetX = cx > midX ? 16 : -16;
+  const labelOffsetY = cy > midY ? 16 : -12;
+  svg += `<text x="${cx + labelOffsetX}" y="${cy + labelOffsetY}" text-anchor="${cx > midX ? 'start' : 'end'}" fill="${getDotColor(resultKey)}" font-size="11" font-weight="700" font-family="var(--font)">您在这里</text>`;
+
+  svg += `</svg>`;
+
+  return `
+    <div class="chart-wrap">
+      <h3>治理定位 · 四象限视图</h3>
+      ${svg}
+      <div class="chart-legend">
+        <span><span class="dot" style="background:#c0392b"></span> 治理落后于业务</span>
+        <span><span class="dot" style="background:#1a6b4a"></span> 治理与业务同步</span>
+        <span><span class="dot" style="background:#8e99a9"></span> 基础阶段匹配</span>
+        <span><span class="dot" style="background:#2563a0"></span> 治理领先于业务</span>
+      </div>
+    </div>
+  `;
+}
+
+function getDotColor(resultKey) {
+  const map = {
+    governance_behind: '#c0392b',
+    tool_ahead: '#b85c1a',
+    vision_ahead: '#b85c1a',
+    aligned_foundational: '#5f6b7a',
+    aligned_mature: '#1a6b4a',
+    governance_ahead: '#2563a0'
+  };
+  return map[resultKey] || '#1e3a5f';
+}
+
+// ── Email Capture ──
+function submitEmail() {
+  const input = document.getElementById('emailInput');
+  const email = input.value.trim();
+  if (!email || !email.includes('@')) {
+    input.style.borderColor = '#c0392b';
+    input.focus();
+    setTimeout(() => { input.style.borderColor = ''; }, 2000);
+    return;
+  }
+
+  const result = RESULTS[state.resultKey];
+  document.getElementById('captureForm').style.display = 'none';
+  document.getElementById('captureSuccess').style.display = 'block';
+
+  // POST to Vercel Function
+  fetch('/api/submit-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: email,
+      resultKey: state.resultKey,
+      headline: result.headline,
+    }),
+  }).then(r => r.json())
+    .then(data => console.log('CTG Lead submitted:', data))
+    .catch(err => console.error('CTG Lead error:', err));
+}
+
+// ── Copy Quote ──
+function copyQuote(btn) {
+  const result = RESULTS[state.resultKey];
+  navigator.clipboard.writeText(result.headline).then(() => {
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 复制判断句';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    btn.textContent = '复制失败';
+    setTimeout(() => { btn.textContent = '📋 复制判断句'; }, 1500);
+  });
+}
+
+// ── Init ──
+renderWelcome();
+</script>
+
+</body>
+</html>
