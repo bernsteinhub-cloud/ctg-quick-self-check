@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
       const resend = new Resend(resendApiKey);
 
       await resend.emails.send({
-        from: 'CTG Quick Self-Check <noreply@ctg-check.yourdomain.com>',
+        from: 'CTG Quick Self-Check <onboarding@resend.dev>',
         to: notifyEmail,
         subject: `[CTG 新线索] ${email} — ${resultLabel}`,
         html: `
