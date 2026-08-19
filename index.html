@@ -383,7 +383,7 @@ const QUESTIONS = [
     title: '<span class="en">What level of compliance, data protection, and travel safety does your business require?</span><span class="zh">贵公司业务对合规、数据保护、出行安全的要求程度？</span>',
     options: ['<span class="en">Low (primarily domestic travel)</span><span class="zh">较低（以国内出差为主）</span>', '<span class="en">Moderate (overseas operations, standard business travel)</span><span class="zh">中等（有海外业务，标准商务差旅为主）</span>', '<span class="en">High (multinational operations, industry regulation or data compliance)</span><span class="zh">较高（跨国运营，涉及行业监管或数据合规）</span>', '<span class="en">Very high (financial/pharma/energy regulated industries, or high-risk destinations)</span><span class="zh">很高（金融/医药/能源等强监管行业，或员工常赴高风险地区）</span>']
   },
-  // ── Group B: Current Governance Capability (6 questions) ──
+  // ── Group B: Current Governance Capability (8 questions) ──
   {
     id: 'B1', group: 'Group B · Governance Capability', groupLabel: 'Governance Capability / 治理能力',
     title: '<span class="en">Who is responsible for travel management?</span><span class="zh">差旅由谁负责？</span>',
@@ -413,6 +413,16 @@ const QUESTIONS = [
     id: 'B6', group: 'Group B · Governance Capability', groupLabel: 'Governance Capability / 治理能力',
     title: '<span class="en">What is the current state of travel risk and safety management?</span><span class="zh">出差风险与安全管理现状？</span>',
     options: ['<span class="en">No relevant mechanisms</span><span class="zh">没有相关机制</span>', '<span class="en">Basic compliance/approval controls</span><span class="zh">有基础合规/审批控制</span>', '<span class="en">Itinerary tracking and emergency contact protocols</span><span class="zh">有行程追踪和应急联络机制</span>', '<span class="en">Global risk prediction and emergency response system</span><span class="zh">有覆盖全球的风险预测和应急响应体系</span>']
+  },
+  {
+    id: 'B7', group: 'Group B · Governance Capability', groupLabel: 'Governance Capability / 治理能力',
+    title: '<span class="en">In one sentence, what is the primary objective of your company\'s travel management?</span><span class="zh">如果用一句话概括，贵公司管理差旅的出发点是？</span>',
+    options: ['<span class="en">Complete travel arrangements (administrative)</span><span class="zh">完成出行安排（行政事务）</span>', '<span class="en">Reduce travel spend (cost control)</span><span class="zh">降低差旅花费（成本控制）</span>', '<span class="en">Improve booking/expense process efficiency (operational efficiency)</span><span class="zh">提升预订/报销流程效率（运营效率）</span>', '<span class="en">Support department/business decision-making (business support)</span><span class="zh">支持部门/业务经营决策（业务支持）</span>', '<span class="en">Support enterprise-level decision-making (corporate governance)</span><span class="zh">辅助企业整体经营决策（企业治理）</span>']
+  },
+  {
+    id: 'B8', group: 'Group B · Governance Capability', groupLabel: 'Governance Capability / 治理能力',
+    title: '<span class="en">What is your travel data currently used for?</span><span class="zh">差旅数据目前主要用于？</span>',
+    options: ['<span class="en">Not yet linked with other data</span><span class="zh">尚未与其他数据关联使用</span>', '<span class="en">Used only for expense accounting</span><span class="zh">仅用于费用核算</span>', '<span class="en">Used for departmental management analysis</span><span class="zh">用于部门管理分析</span>', '<span class="en">Used for business trend analysis</span><span class="zh">用于业务趋势分析</span>', '<span class="en">Used to support enterprise-level business decisions</span><span class="zh">用于企业级经营决策支持</span>']
   }
 ];
 
@@ -497,10 +507,12 @@ function calculateScores(answers) {
   const A4 = normalize(answers.A4, 3);
   const contextLevel = (A1 + A2 + A3 + A4) / 4;
 
-  // Cognition: B1 (5 options, index 0-4) + B2 (4 options, index 0-3)
+  // Cognition: Core four dimensions — B1 Ownership (30%), B2 Executive Visibility (25%), B7 Strategic Objective (25%), B8 Business Integration (20%)
   const B1_norm = normalize(answers.B1, 4);
   const B2_norm = normalize(answers.B2, 3);
-  const cognitionLevel = (B1_norm + B2_norm) / 2;
+  const B7_norm = normalize(answers.B7, 4);
+  const B8_norm = normalize(answers.B8, 4);
+  const cognitionLevel = B1_norm * 0.30 + B2_norm * 0.25 + B7_norm * 0.25 + B8_norm * 0.20;
 
   // Capability: B3 (5 options, 0-4) + B4 (4) + B5 (4) + B6 (4)
   const B3_norm = normalize(answers.B3, 4);
@@ -581,7 +593,7 @@ function renderWelcome() {
       <p class="subtitle"><span class="en">Is your travel governance keeping pace with your business growth?</span><span class="zh">了解您的企业差旅治理，是否跟上了业务发展的步伐</span> <span style="color:#ccc;font-size:11px">v2.2</span></p>
       <div class="meta">
         <span><span class="icon">⏱</span> <span class="en">~2 min</span><span class="zh">约2分钟</span></span>
-        <span><span class="icon">📋</span> <span class="en">10 questions</span><span class="zh">10道题</span></span>
+        <span><span class="icon">📋</span> <span class="en">12 questions</span><span class="zh">12道题</span></span>
         <span><span class="icon">📊</span> <span class="en">Instant diagnosis</span><span class="zh">即时诊断</span></span>
       </div>
       <button class="btn btn-primary" onclick="startQuiz()"><span class="en">Start Diagnosis</span><span class="zh">开始诊断</span></button>
