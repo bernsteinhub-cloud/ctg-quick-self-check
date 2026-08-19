@@ -521,8 +521,14 @@ function calculateScores(answers) {
   const B6_norm = normalize(answers.B6, 3);
   const capabilityLevel = (B3_norm + B4_norm + B5_norm + B6_norm) / 4;
 
-  // Current = blended Cognition + Capability
-  const currentLevel = (cognitionLevel + capabilityLevel) / 2;
+  // Current = Core-based with bounded Support adjustment (per CTG Scoring Methodology V2 §3.3)
+  // Support clearly ahead does NOT raise the rating ("tool illusion" guardrail).
+  let currentLevel;
+  if (capabilityLevel < cognitionLevel - 0.5) {
+    currentLevel = cognitionLevel - 0.3 * (cognitionLevel - capabilityLevel - 0.5);
+  } else {
+    currentLevel = cognitionLevel;
+  }
 
   return { contextLevel, cognitionLevel, capabilityLevel, currentLevel };
 }
